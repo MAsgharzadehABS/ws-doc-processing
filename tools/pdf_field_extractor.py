@@ -186,13 +186,14 @@ class OpenAIDataExtractor:
     def process_parsed_text_file(self, text_file_path: str, output_dir: str = "test-extract") -> Dict:
         """
         Process a single parsed text file and extract marine fuel data.
+        Includes comprehensive metadata in the extracted data.
         
         Args:
             text_file_path (str): Path to the text file containing parsed PDF content
             output_dir (str): Directory to save the extraction results
             
         Returns:
-            Dict: Processing results including extracted data
+            Dict: Processing results including extracted data with metadata
         """
         if not os.path.exists(text_file_path):
             logger.error(f"Text file not found: {text_file_path}")
@@ -204,32 +205,86 @@ class OpenAIDataExtractor:
             
             # Read the parsed text
             with open(text_file_path, 'r', encoding='utf-8') as f:
-                document_text = f.read()
+                full_content = f.read()
             
             logger.info(f"Processing text file: {text_file_path}")
+            
+            # Extract metadata from the text file if it exists
+            metadata = {}
+            document_text = full_content
+            
+            # Check if the file contains metadata header
+            if "=== DOCUMENT METADATA ===" in full_content:
+                try:
+                    # Split content to extract metadata and document text
+                    parts = full_content.split("=== EXTRACTED TEXT CONTENT ===")
+                    if len(parts) >= 2:
+                        metadata_section = parts[0]
+                        document_text = parts[1].replace("=== END DOCUMENT ===", "").strip()
+                        
+                        # Parse metadata from the header
+                        metadata_lines = metadata_section.split('\n')
+                        for line in metadata_lines:
+                            if ':' in line and not line.startswith('==='):
+                                key, value = line.split(':', 1)
+                                metadata[key.strip()] = value.strip()
+                                
+                        logger.info(f"Extracted metadata from text file: {len(metadata)} fields")
+                    else:
+                        document_text = full_content
+                except Exception as e:
+                    logger.warning(f"Failed to parse metadata from text file: {e}")
+                    document_text = full_content
+            
             logger.info(f"Document length: {len(document_text)} characters")
             
             # Extract marine fuel data
             extracted_data = self.extract_marine_fuel_data(document_text)
             
-            # Prepare result
+            # Add metadata to the extracted data
+            import datetime
+            processing_timestamp = datetime.datetime.now().isoformat()
+            
+            # Create comprehensive result with metadata
             filename_base = os.path.splitext(os.path.basename(text_file_path))[0]
+            
+            # Enhanced extracted data structure with metadata
+            enhanced_extracted_data = {
+                "document_metadata": {
+                    "original_filename": metadata.get("Original Filename", ""),
+                    "original_file_path": metadata.get("Original File Path", ""),
+                    "file_size": metadata.get("File Size", ""),
+                    "file_modified": metadata.get("File Modified", ""),
+                    "extraction_timestamp": metadata.get("Processing Timestamp", ""),
+                    "extraction_method": metadata.get("Extraction Method", "OCR"),
+                    "parser_version": metadata.get("Parser Version", ""),
+                    "text_length": metadata.get("Text Length", ""),
+                    "processed_by": "OpenAIDataExtractor",
+                    "extraction_processing_timestamp": processing_timestamp,
+                    "source_text_file": text_file_path,
+                    "filename_base": filename_base
+                },
+                "extracted_fields": extracted_data
+            }
+            
+            # Prepare result
             result = {
                 "text_file": text_file_path,
                 "filename_base": filename_base,
                 "document_length": len(document_text),
-                "extracted_data": extracted_data,
+                "extracted_data": enhanced_extracted_data,
                 "success": "error" not in extracted_data
             }
             
-            # Save extracted data as JSON
-            output_file = os.path.join(output_dir, f"{filename_base}_marine_fuel_data.json")
+            # Save enhanced extracted data as JSON
+            output_file = os.path.join(output_dir, f"{filename_base}_contact_information_data.json")
             with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump(extracted_data, f, indent=2, ensure_ascii=False)
+                json.dump(enhanced_extracted_data, f, indent=2, ensure_ascii=False)
             
             result["output_file"] = output_file
             
-            logger.info(f"Marine fuel data saved to: {output_file}")
+            logger.info(f"Enhanced data with metadata saved to: {output_file}")
+            logger.info(f"Original filename preserved: {metadata.get('Original Filename', 'N/A')}")
             return result
             
         except Exception as e:

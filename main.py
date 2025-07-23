@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 from dotenv import load_dotenv
 from tools.pdf_text_parser import parse_multiple_pdfs
 from tools.pdf_field_extractor import OpenAIDataExtractor, test_azure_openai_connection
@@ -112,23 +113,49 @@ def main():
         print(f"   ✅ Successfully extracted: {successful_extractions}")
         print(f"   ❌ Failed to extract: {failed_extractions}")
         
-        # Save consolidated results
+        # Save consolidated results with enhanced metadata
         consolidated_file = os.path.join(EXTRACT_DIRECTORY, "contact_information_extraction_results.json")
+        
+        # Enhance consolidated results with metadata summary
+        enhanced_consolidated_results = {
+            "processing_summary": {
+                "total_files_processed": len(pdf_files),
+                "successful_extractions": successful_extractions,
+                "failed_extractions": failed_extractions,
+                "processing_timestamp": datetime.datetime.now().isoformat(),
+                "input_directory": PDF_DIRECTORY,
+                "parsed_directory": PARSED_DIRECTORY,
+                "extract_directory": EXTRACT_DIRECTORY
+            },
+            "individual_results": extraction_results
+        }
+        
         with open(consolidated_file, 'w', encoding='utf-8') as f:
-            json.dump(extraction_results, f, indent=2, ensure_ascii=False, default=str)
+            json.dump(enhanced_consolidated_results, f, indent=2, ensure_ascii=False, default=str)
         
         print(f"\n📁 Files and Results:")
         print(f"   📄 Parsed text files: {os.path.abspath(PARSED_DIRECTORY)}")
         print(f"   📊 Extracted JSON files: {os.path.abspath(EXTRACT_DIRECTORY)}")
-        print(f"   🗃️ Consolidated results: {consolidated_file}")
+        print(f"   🗃️ Enhanced consolidated results: {consolidated_file}")
         
-        # Show extracted data files
+        # Show extracted data files with metadata info
         data_files = [f for f in os.listdir(EXTRACT_DIRECTORY) if f.endswith('_contact_information_data.json')]
-        print(f"   📋 Individual data files (preserving original PDF names):")
+        print(f"   📋 Individual data files (with metadata & original filenames):")
         for data_file in data_files:
             # Show original PDF name reference
             original_name = data_file.replace('_contact_information_data.json', '.pdf')
             print(f"     - {data_file} (from {original_name})")
+            # Try to show original filename from metadata if available
+            try:
+                data_file_path = os.path.join(EXTRACT_DIRECTORY, data_file)
+                with open(data_file_path, 'r', encoding='utf-8') as f:
+                    data_content = json.load(f)
+                    if 'document_metadata' in data_content and 'original_filename' in data_content['document_metadata']:
+                        original_from_metadata = data_content['document_metadata']['original_filename']
+                        if original_from_metadata:
+                            print(f"       ✓ Metadata preserved: {original_from_metadata}")
+            except Exception:
+                pass
         
     except Exception as e:
         print(f"❌ Error during contact information data extraction: {e}")
@@ -179,18 +206,40 @@ def process_single_pdf(pdf_path: str):
         if extraction_result.get("success"):
             print("✅ Contact information data extraction completed!")
             
-            # Display extracted data
+            # Display extracted data with metadata
             extracted_data = extraction_result.get("extracted_data", {})
             print(f"\n📋 Extracted Contact Information Data from {original_filename}:")
             print("-" * 50)
-            for field, value in extracted_data.items():
-                print(f"   {field}: {value}")
+            
+            # Show metadata if available
+            if isinstance(extracted_data, dict) and "document_metadata" in extracted_data:
+                metadata = extracted_data["document_metadata"]
+                print(f"📄 Original Filename: {metadata.get('original_filename', 'N/A')}")
+                print(f"📅 Processing Timestamp: {metadata.get('extraction_processing_timestamp', 'N/A')}")
+                print(f"🔧 Extraction Method: {metadata.get('extraction_method', 'N/A')}")
+                print(f"📏 Text Length: {metadata.get('text_length', 'N/A')}")
+                print("-" * 50)
+                
+                # Show extracted fields
+                if "extracted_fields" in extracted_data:
+                    fields_data = extracted_data["extracted_fields"]
+                    for field, value in fields_data.items():
+                        print(f"   {field}: {value}")
+                else:
+                    for field, value in extracted_data.items():
+                        if field != "document_metadata":
+                            print(f"   {field}: {value}")
+            else:
+                # Fallback for old format
+                for field, value in extracted_data.items():
+                    print(f"   {field}: {value}")
                 
             output_file = extraction_result.get("output_file", "")
             if output_file:
                 output_filename = os.path.basename(output_file)
-                print(f"\n💾 Data saved as: {output_filename}")
+                print(f"\n💾 Enhanced data with metadata saved as: {output_filename}")
                 print(f"📁 Location: test-extract/")
+                print(f"✅ Original filename preserved in metadata")
         else:
             print(f"❌ Extraction failed: {extraction_result.get('error', 'Unknown error')}")
             

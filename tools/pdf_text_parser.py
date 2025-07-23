@@ -91,7 +91,7 @@ class PDFTextParser:
     def parse_and_save(self, pdf_path: str, output_dir: str = "test-parsed") -> Dict:
         """
         Parse PDF using OCR and save extracted text to the specified directory.
-        Preserves the original PDF filename.
+        Preserves the original PDF filename and includes comprehensive metadata.
         
         Args:
             pdf_path (str): Path to the PDF file
@@ -129,12 +129,36 @@ class PDFTextParser:
                 "success": False
             }
         
-        # Save the extracted text with original filename
+        # Get file metadata
+        import datetime
+        file_stats = os.stat(pdf_path)
+        processing_timestamp = datetime.datetime.now().isoformat()
+        
+        # Create comprehensive metadata header
+        metadata_header = f"""=== DOCUMENT METADATA ===
+Original Filename: {original_filename}
+Original File Path: {pdf_path}
+File Size: {file_stats.st_size} bytes
+File Modified: {datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()}
+Processing Timestamp: {processing_timestamp}
+Extraction Method: OCR (Tesseract)
+OCR Configuration: Enhanced for poor quality scanned documents
+Text Length: {len(extracted_text)} characters
+Parser Version: PDFTextParser v1.0
+=== END METADATA ===
+
+=== EXTRACTED TEXT CONTENT ===
+"""
+        
+        # Combine metadata header with extracted text
+        final_content = metadata_header + extracted_text + "\n\n=== END DOCUMENT ==="
+        
+        # Save the extracted text with original filename and metadata
         text_file_path = os.path.join(output_dir, f"{filename_base}.txt")
         try:
             with open(text_file_path, 'w', encoding='utf-8') as f:
-                f.write(extracted_text)
-            logger.info(f"Saved extracted text to: {text_file_path}")
+                f.write(final_content)
+            logger.info(f"Saved extracted text with metadata to: {text_file_path}")
         except Exception as e:
             logger.error(f"Failed to save text file: {e}")
             return {
@@ -144,16 +168,22 @@ class PDFTextParser:
                 "success": False
             }
         
-        # Save extraction method info
+        # Save extraction method info (enhanced)
         info_file_path = os.path.join(output_dir, f"{filename_base}_info.txt")
         try:
             with open(info_file_path, 'w', encoding='utf-8') as f:
+                f.write(f"=== PROCESSING INFORMATION ===\n")
                 f.write(f"Original PDF: {pdf_path}\n")
                 f.write(f"Original filename: {original_filename}\n")
+                f.write(f"File size: {file_stats.st_size} bytes\n")
+                f.write(f"File modified: {datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()}\n")
+                f.write(f"Processing timestamp: {processing_timestamp}\n")
                 f.write(f"Extraction method: OCR (Tesseract)\n")
                 f.write(f"Text length: {len(extracted_text)} characters\n")
                 f.write(f"Processing: Optimized for poor quality scanned documents\n")
                 f.write(f"OCR settings: Enhanced configuration with character whitelist\n")
+                f.write(f"Parser version: PDFTextParser v1.0\n")
+                f.write(f"Output file: {text_file_path}\n")
             logger.info(f"Saved processing info to: {info_file_path}")
         except Exception as e:
             logger.warning(f"Failed to save info file: {e}")
@@ -166,6 +196,8 @@ class PDFTextParser:
             "info_file": info_file_path,
             "extraction_method": "OCR",
             "text_length": len(extracted_text),
+            "file_size": file_stats.st_size,
+            "processing_timestamp": processing_timestamp,
             "success": True
         }
         
