@@ -47,7 +47,7 @@ class AzureBlobHandler:
             logger.error(f"Failed to initialize Azure Blob Handler: {str(e)}")
             raise
     
-    def list_blobs(self, prefix: str = None) -> List[str]:
+    def list_blobs(self, prefix: Optional[str] = None) -> List[str]:
         """
         List all blobs in the container.
         
@@ -71,7 +71,7 @@ class AzureBlobHandler:
             logger.error(f"Failed to list blobs: {str(e)}")
             raise
     
-    def upload_file(self, local_file_path: str, blob_name: str = None, overwrite: bool = True) -> bool:
+    def upload_file(self, local_file_path: str, blob_name: Optional[str] = None, overwrite: bool = True) -> bool:
         """
         Upload a file to the blob container.
         
@@ -113,7 +113,7 @@ class AzureBlobHandler:
             logger.error(f"Unexpected error during upload: {str(e)}")
             return False
     
-    def download_file(self, blob_name: str, local_file_path: str = None) -> bool:
+    def download_file(self, blob_name: str, local_file_path: Optional[str] = None) -> bool:
         """
         Download a file from the blob container.
         

@@ -1,239 +1,238 @@
-# Azure Blob Storage Handler
+# Marine Fuel Document Processing System
 
-A comprehensive Python class for handling Azure Blob Storage operations including listing, uploading, and downloading files using SAS (Shared Access Signature) token authentication.
+A comprehensive system for processing marine fuel delivery PDF documents using OCR and Azure OpenAI for structured data extraction.
 
-## 🚀 Features
+## Features
 
-- **List Blobs** - List all blobs or filter by prefix
-- **Upload Files** - Upload single files or entire directories
-- **Download Files** - Download individual blobs or entire directory structures
-- **Delete Blobs** - Remove blobs from storage
-- **Blob Operations** - Check existence and get properties
-- **SAS Token Authentication** - Secure authentication using SAS keys
-- **Error Handling** - Comprehensive error handling and logging
-- **Directory Support** - Maintains folder structure for bulk operations
+- **OCR Text Extraction**: Uses Tesseract OCR optimized for poor quality scanned documents
+- **Azure OpenAI Integration**: Leverages Azure OpenAI for intelligent entity extraction
+- **Marine Fuel Specialization**: Specifically designed to extract marine fuel delivery data fields
+- **Batch Processing**: Process multiple PDF documents at once
+- **Structured Output**: Generates clean JSON output with standardized fields
+- **Filename Preservation**: Maintains original PDF filenames in all output files
 
-## 📋 Requirements
+## System Architecture
 
-- Python 3.7+
-- Azure Storage Account with SAS token
-- Azure Blob Container
+The system works in two main steps:
 
-## 🛠️ Installation
+1. **PDF OCR Extraction**: Extract text from scanned PDFs using Tesseract OCR and save to `test-parsed/` folder
+2. **Data Extraction**: Use Azure OpenAI to extract structured marine fuel delivery data
 
-1. **Clone or download the project files**
+## Installation
 
-2. **Install dependencies:**
+### Prerequisites
+
+1. **Tesseract OCR** (Required for scanned document processing)
+
+#### Installing Tesseract OCR on Windows:
+
+1. **Download Tesseract installer:**
+   - Go to: https://github.com/UB-Mannheim/tesseract/wiki
+   - Download the latest Windows installer (e.g., `tesseract-ocr-w64-setup-v5.3.3.20231005.exe`)
+
+2. **Install Tesseract:**
+   - Run the installer as Administrator (or under your user)
+   - During installation, note the installation path (usually `C:\Program Files\Tesseract-OCR\`)
+   - Make sure to check "Add to PATH" during installation
+
+3. **Verify installation:**
+   ```bash
+   tesseract --version
+   ```
+
+4. **If PATH not set automatically:**
+   - Add `C:\Program Files\Tesseract-OCR\` to your Windows PATH environment variable
+   - Restart your command prompt/PowerShell
+
+### Python Environment Setup
+
+1. Clone the repository and navigate to the project directory
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate  # On Windows
+   # or
+   source venv/bin/activate  # On macOS/Linux
+   ```
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Create a `.env` file in the project root:**
-   ```env
-   SAS_TOKEN=your_sas_token_here
-   CONTAINER_NAME=your_container_name
-   ```
+## Configuration
 
-## 📁 Project Structure
-
-```
-wavesight-doc-processing/
-├── tools/
-│   └── blob_handler.py      # Main AzureBlobHandler class
-├── example_usage.py         # Usage examples
-├── requirements.txt         # Python dependencies
-├── .env                    # Environment variables (create this)
-└── README.md               # This file
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file with the following variables:
+Create a `.env` file in the project root with your Azure configuration:
 
 ```env
-# Your SAS token from Azure Storage Account
-SAS_TOKEN=
+# Azure Blob Storage Configuration (optional)
+SAS_TOKEN=your_sas_token_here
+CONTAINER_NAME=your_container_name_here
 
-# Your blob container name
-CONTAINER_NAME=
+# Azure OpenAI Configuration (required)
+OPENAI_ENDPOINT=https://your-openai-resource.openai.azure.com/
+OPENAI_KEY=your_azure_openai_api_key_here
 ```
 
-### Getting Your SAS Token
+## Usage
 
-1. Go to your Azure Storage Account
-2. Navigate to "Shared access signature" in the left menu
-3. Configure permissions (Read, Add, Create, Write, Delete, List)
-4. Set expiry date
-5. Generate SAS token
-6. Copy the token (without the leading `?`)
+### Process Multiple PDFs
 
-## 📚 Usage
-
-### Basic Usage
-
-```python
-from tools.blob_handler import AzureBlobHandler
-
-# Initialize
-handler = AzureBlobHandler(
-    account_url="https://yourstorageaccount.blob.core.windows.net/",
-    sas_token="your_sas_token",
-    container_name="your_container"
-)
-
-# List all blobs
-blobs = handler.list_blobs()
-
-# Upload a file
-handler.upload_file("local_file.txt", "remote_file.txt")
-
-# Download a file
-handler.download_file("remote_file.txt", "downloaded_file.txt")
-
-# Upload entire directory
-handler.upload_directory("local_folder/", "remote_folder/")
-```
-
-### Available Methods
-
-| Method | Description | Parameters |
-|--------|-------------|------------|
-| `list_blobs(prefix=None)` | List all blobs or filter by prefix | `prefix`: Optional filter |
-| `upload_file(local_path, blob_name, overwrite=True)` | Upload single file | `local_path`, `blob_name`, `overwrite` |
-| `download_file(blob_name, local_path=None)` | Download single file | `blob_name`, `local_path` |
-| `upload_directory(local_dir, blob_prefix="", overwrite=True)` | Upload entire directory | `local_dir`, `blob_prefix`, `overwrite` |
-| `download_directory(blob_prefix, local_dir)` | Download directory by prefix | `blob_prefix`, `local_dir` |
-| `delete_blob(blob_name)` | Delete a blob | `blob_name` |
-| `blob_exists(blob_name)` | Check if blob exists | `blob_name` |
-| `get_blob_properties(blob_name)` | Get blob metadata | `blob_name` |
-
-## 🧪 Running Examples
-
-The `example_usage.py` file contains three separate example functions:
-
-### 1. List Blobs Example
-```python
-def list_blobs_example():
-    # Lists all blobs in your container
-```
-
-### 2. Upload Directory Example
-```python
-def upload_directory_example():
-    # Uploads all files from 'raw_inputs/' directory
-```
-
-### 3. Download Blob Example
-```python
-def download_blob_example():
-    # Downloads a specific blob file
-```
-
-### Running Examples
+Place your PDF files in the `test/` directory and run:
 
 ```bash
-# Run the active example (currently upload_directory_example)
-python example_usage.py
+python main.py
 ```
 
-To run different examples, edit the `if __name__ == "__main__":` section in `example_usage.py`:
+This will:
+1. Extract text from all PDFs in the `test/` directory using OCR
+2. Save extracted text to `test-parsed/` folder (preserving original filenames)
+3. Extract marine fuel delivery data using Azure OpenAI
+4. Save results as JSON files
+
+### Process Single PDF
 
 ```python
-if __name__ == "__main__":
-    list_blobs_example()        # Uncomment to run
-    # upload_directory_example()  # Currently active
-    # download_blob_example()     # Uncomment to run
+from main import process_single_pdf
+process_single_pdf("path/to/your/document.pdf")
 ```
 
-## 📂 Directory Structure Examples
+### Manual Steps
 
-### Upload Directory Structure
-When uploading `raw_inputs/` directory:
-```
-raw_inputs/
-├── file1.txt
-├── subfolder/
-│   ├── file2.pdf
-│   └── file3.docx
-└── another_file.xlsx
-```
+You can also run the components separately:
 
-Results in Azure Blob Storage:
-```
-test_upload/file1.txt
-test_upload/subfolder/file2.pdf
-test_upload/subfolder/file3.docx
-test_upload/another_file.xlsx
+```python
+# Step 1: Extract text from PDFs using OCR
+from tools.pdf_text_parser import parse_multiple_pdfs
+results = parse_multiple_pdfs("test", "test-parsed")
+
+# Step 2: Extract marine fuel data
+from tools.marine_fuel_extractor import MarineFuelDataExtractor
+extractor = MarineFuelDataExtractor()
+extraction_results = extractor.process_all_parsed_texts("test-parsed")
 ```
 
-## 🔍 Error Handling
+## Extracted Data Fields
 
-The handler includes comprehensive error handling:
+The system extracts the following marine fuel delivery fields:
 
-- **File not found errors** - Clear messages when local files don't exist
-- **Azure service errors** - Proper handling of Azure API errors
-- **Authentication errors** - Clear feedback on SAS token issues
-- **Network errors** - Timeout and connection error handling
-- **Logging** - Detailed logs for debugging
+- **RECEIVING_VESSEL_NAME**: Name of the vessel receiving the fuel
+- **DELIVERING_VESSEL_NAME**: Name of the vessel or barge delivering the fuel  
+- **IMO_NUMBER**: International Maritime Organization number
+- **PORT**: Port where the delivery took place
+- **DELIVERY_DATE**: Date of fuel delivery
+- **SUPPLIER_NAME**: Name of the fuel supplier company
+- **SUPPLIER_ADDRESS**: Full address of the supplier
+- **SUPPLIER_PHONE**: Phone number of the supplier
+- **DELIVERY_METHOD**: Method of delivery (barge, truck, pipeline)
+- **DELIVERY_LOCATION**: Specific location (berth, anchorage, etc.)
+- **PRODUCT_NAME**: Type of fuel product (HFO, LSFO, VLSFO, MDO, MGO, etc.)
+- **QUANTITY_METRIC_TONS**: Quantity delivered in metric tons
+- **DENSITY_15C**: Density at 15°C
+- **SULPHUR_CONTENT**: Sulphur content percentage
+- **FLASH_POINT**: Flash point temperature
+- **TIME_OF_COMMENCEMENT**: Start time of delivery
+- **TIME_COMPLETED**: End time of delivery
 
-## 🛡️ Security Best Practices
+## Output Files
 
-1. **Never commit SAS tokens** - Always use `.env` files
-2. **Set appropriate permissions** - Only grant necessary permissions in SAS token
-3. **Set expiry dates** - SAS tokens should have reasonable expiry times
-4. **Use HTTPS only** - Always use secure connections
+The system generates several types of output files, **all preserving original PDF filenames**:
 
-## 🐛 Troubleshooting
+### Text Extraction Output (`test-parsed/`)
+- `{original_pdf_name}.txt`: Extracted text from PDF using OCR
+- `{original_pdf_name}_info.txt`: Metadata about extraction process
+
+### Marine Fuel Data Output (`test-parsed/`)
+- `{original_pdf_name}_marine_fuel_data.json`: Structured marine fuel data
+- `marine_fuel_extraction_results.json`: Consolidated results for all files
+
+### Example File Structure:
+```
+test-parsed/
+├── 1. BUNKER LSMGO 13-01-2023.txt
+├── 1. BUNKER LSMGO 13-01-2023_info.txt  
+├── 1. BUNKER LSMGO 13-01-2023_marine_fuel_data.json
+├── 1.B%20SMGO%20BDN%2027.01.2024%20-%20ONSAN.txt
+├── 1.B%20SMGO%20BDN%2027.01.2024%20-%20ONSAN_info.txt
+├── 1.B%20SMGO%20BDN%2027.01.2024%20-%20ONSAN_marine_fuel_data.json
+└── marine_fuel_extraction_results.json
+```
+
+## Dependencies
+
+- **OCR Processing**: pytesseract, pdf2image, Pillow, Tesseract OCR
+- **Azure Integration**: openai (Azure OpenAI client)
+- **Utilities**: python-dotenv
+- **Azure Storage** (optional): azure-storage-blob, azure-core
+
+## Troubleshooting
 
 ### Common Issues
 
-1. **"Authentication failed"**
-   - Check your SAS token is correct and not expired
-   - Ensure SAS token has required permissions
+1. **Tesseract OCR not found**: 
+   - Install Tesseract OCR following the instructions above
+   - Ensure it's added to your system PATH
+   - Restart your terminal after installation
 
-2. **"Container not found"**
-   - Verify container name in `.env` file
-   - Check container exists in your storage account
+2. **Azure OpenAI connection failed**: 
+   - Check your `OPENAI_ENDPOINT` and `OPENAI_KEY` in `.env`
+   - Verify your Azure OpenAI deployment name
 
-3. **"File not found" during upload**
-   - Verify local file/directory path exists
-   - Check file permissions
+3. **No text extracted**: 
+   - Ensure PDFs contain readable text (not just images without text)
+   - Try adjusting OCR settings for very poor quality documents
 
-4. **Import errors**
-   - Run `pip install -r requirements.txt`
-   - Ensure you're in the correct Python environment
+4. **Poor OCR quality**:
+   - The system is optimized for poor quality scans with custom OCR configuration
+   - For extremely poor quality, consider pre-processing images with image enhancement tools
 
-### Enable Debug Logging
+### Test Components
 
-To see detailed logs, modify the logging level in `blob_handler.py`:
-
-```python
-logging.basicConfig(level=logging.DEBUG)
+#### Test Tesseract OCR Installation:
+```bash
+tesseract --version
 ```
 
-## 📝 Dependencies
+#### Test Azure OpenAI Connection:
+```bash
+python test-openai.py
+```
 
-- `azure-storage-blob` - Azure Blob Storage SDK
-- `azure-core` - Azure SDK core functionality  
-- `python-dotenv` - Environment variable management
+#### Test PDF Text Extraction:
+```bash
+python tools/pdf_text_parser.py
+```
 
-## 🤝 Contributing
+#### Test Marine Fuel Data Extraction:
+```bash
+python tools/marine_fuel_extractor.py
+```
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+## OCR Optimization for Poor Quality Documents
 
-## 📄 License
+The system includes several optimizations for poor quality scanned documents:
 
-This project is open source and available under the MIT License.
+- **High DPI conversion** (300 DPI) for better image quality
+- **Enhanced OCR configuration** with character whitelisting
+- **Multi-page processing** with progress tracking
+- **Error handling** for corrupted or unreadable pages
+- **Custom Tesseract settings** optimized for marine document formats
 
-## 🆘 Support
+## File Structure
 
-For issues and questions:
-1. Check the troubleshooting section
-2. Review Azure Blob Storage documentation
-3. Check Azure SDK for Python documentation 
+```
+ws-doc-processing/
+├── main.py                              # Main processing pipeline
+├── requirements.txt                     # Python dependencies
+├── .env                                 # Configuration (create this)
+├── test/                               # Input PDF files
+├── test-parsed/                        # Parsed text and extracted data
+├── tools/
+│   ├── pdf_text_parser.py             # OCR text extraction
+│   ├── marine_fuel_extractor.py       # Azure OpenAI data extraction
+│   └── blob_handler.py                # Azure Blob Storage (optional)
+└── README.md                          # This file
+```
+
+## License
+
+This project is for internal use and marine fuel document processing applications. 

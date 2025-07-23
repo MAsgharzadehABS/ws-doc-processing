@@ -7,8 +7,8 @@ load_dotenv()
 def list_blobs_example():
     # Configuration - using environment variables
     ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
-    SAS_TOKEN = os.getenv("SAS_TOKEN")
-    CONTAINER_NAME = os.getenv("CONTAINER_NAME")
+    SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
+    CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
     
     try:
         # Initialize the blob handler
@@ -32,8 +32,8 @@ def list_blobs_example():
 def upload_directory_example():
     # Configuration - using environment variables
     ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
-    SAS_TOKEN = os.getenv("SAS_TOKEN")
-    CONTAINER_NAME = os.getenv("CONTAINER_NAME")
+    SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
+    CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
     
     try:
         # Initialize the blob handler
@@ -55,11 +55,11 @@ def upload_directory_example():
         print(f"✗ Error: {e}")
 
 
-def download_blob_example():
+def download_blob_example(download_dir = "files/raw_inputs/"):
     # Configuration - using environment variables
     ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
-    SAS_TOKEN = os.getenv("SAS_TOKEN")
-    CONTAINER_NAME = os.getenv("CONTAINER_NAME")
+    SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
+    CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
     
     try:
         # Initialize the blob handler
@@ -67,25 +67,51 @@ def download_blob_example():
         blob_handler = AzureBlobHandler(ACCOUNT_URL, SAS_TOKEN, CONTAINER_NAME)
         print("✓ Successfully connected to Azure Blob Storage")
         
-        # Test 3: Download a specific blob
-        print("\n3. Downloading a blob:")
-        blob_to_download = "test_file.txt"  # Replace with an actual blob name from your container
-        local_download_path = "downloaded_file.txt"
+        # Test 3: Download all blobs to a user-specified directory
+        print("\n3. Downloading all blobs:")
         
-        # Check if blob exists first
+        # Get user-specified download directory
+        # download_dir = "files/raw_inputs/"
+        
+        # Create the directory if it doesn't exist
+        os.makedirs(download_dir, exist_ok=True)
+        print(f"   Download directory: {download_dir}")
+        
+        # List all blobs first
         blobs = blob_handler.list_blobs()
-        if blob_to_download in blobs:
-            download_success = blob_handler.download_file(blob_to_download, local_download_path)
-            if download_success:
-                print(f"   ✓ Successfully downloaded '{blob_to_download}' to '{local_download_path}'")
+        if not blobs:
+            print("   No blobs found in container")
+            return
+        
+        print(f"   Found {len(blobs)} blobs to download:")
+        for blob in blobs:
+            print(f"     - {blob}")
+        
+        # Download all blobs
+        print(f"\n   Starting download of {len(blobs)} blobs...")
+        downloaded_count = 0
+        failed_count = 0
+        
+        for blob_name in blobs:
+            # Create local file path maintaining directory structure
+            local_file_path = os.path.join(download_dir, blob_name)
+            
+            # Ensure the directory structure exists
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+            
+            # Download the blob
+            if blob_handler.download_file(blob_name, local_file_path):
+                print(f"     ✓ Downloaded: {blob_name}")
+                downloaded_count += 1
             else:
-                print(f"   ✗ Failed to download '{blob_to_download}'")
-        else:
-            print(f"   Blob '{blob_to_download}' does not exist in container")
-            if blobs:
-                print("   Available blobs to download:")
-                for blob in blobs[:5]:  # Show first 5 blobs as examples
-                    print(f"     - {blob}")
+                print(f"     ✗ Failed to download: {blob_name}")
+                failed_count += 1
+        
+        print(f"\n   Download completed!")
+        print(f"   ✓ Successfully downloaded: {downloaded_count} files")
+        if failed_count > 0:
+            print(f"   ✗ Failed to download: {failed_count} files")
+        print(f"   Files saved to: {os.path.abspath(download_dir)}")
                     
     except Exception as e:
         print(f"✗ Error: {e}")
@@ -93,5 +119,5 @@ def download_blob_example():
 
 if __name__ == "__main__":
     # list_blobs_example()
-    upload_directory_example()
-    # download_blob_example()
+    # upload_directory_example()
+    download_blob_example()

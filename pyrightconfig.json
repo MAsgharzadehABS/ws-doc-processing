@@ -1,0 +1,11 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "extraPaths": [
+        "./tools"
+    ],
+    "pythonVersion": "3.12",
+    "typeCheckingMode": "basic",
+    "useLibraryCodeForTypes": true,
+    "autoImportCompletions": true
+} 
