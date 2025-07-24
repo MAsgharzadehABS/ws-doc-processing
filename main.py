@@ -1,26 +1,85 @@
 import os
 import json
 import datetime
+from multiprocessing import Pool, cpu_count
+from functools import partial
 from dotenv import load_dotenv
-from tools.pdf_text_parser import parse_multiple_pdfs
+from tools.pdf_text_parser import parse_multiple_pdfs, PDFTextParser
 from tools.pdf_field_extractor import OpenAIDataExtractor, test_azure_openai_connection
+from tqdm import tqdm
 
 # Load environment variables
 load_dotenv()
+
+def parse_single_pdf_wrapper(args):
+    """
+    Wrapper function for parsing a single PDF file - compatible with multiprocessing.
+    
+    Args:
+        args (tuple): (pdf_file, pdf_directory, output_dir)
+        
+    Returns:
+        dict: Result dictionary with parsing information
+    """
+    pdf_file, pdf_directory, output_dir = args
+    pdf_path = os.path.join(pdf_directory, pdf_file)
+    
+    try:
+        parser = PDFTextParser()
+        result = parser.parse_and_save(pdf_path, output_dir)
+        return result
+    except Exception as e:
+        return {
+            "pdf_path": pdf_path,
+            "filename": pdf_file,
+            "error": str(e),
+            "success": False
+        }
+
+def extract_single_text_wrapper(args):
+    """
+    Wrapper function for extracting data from a single text file - compatible with multiprocessing.
+    
+    Args:
+        args (tuple): (text_file, parsed_dir, output_dir)
+        
+    Returns:
+        dict: Result dictionary with extraction information
+    """
+    text_file, parsed_dir, output_dir = args
+    text_file_path = os.path.join(parsed_dir, text_file)
+    
+    try:
+        extractor = OpenAIDataExtractor()
+        result = extractor.process_parsed_text_file(text_file_path, output_dir)
+        return result
+    except Exception as e:
+        return {
+            "text_file": text_file_path,
+            "filename_base": text_file.replace('.txt', ''),
+            "error": str(e),
+            "success": False
+        }
 
 def main():
     """
     Main processing pipeline for PDF parsing and field data extraction.
     Optimized for scanned documents with poor quality using OCR.
+    
+    Features:
+    - Multiprocessing support for parallel PDF parsing and data extraction
+    - Automatic process count optimization based on CPU cores and file count
+    - Enhanced performance for batch processing multiple documents
     """
     print("🔍 Field Data Extraction Pipeline")
     print("📄 Optimized for scanned documents with poor quality")
     print("=" * 60)
     
     # Configuration
-    PDF_DIRECTORY = "test"  # Directory containing PDFs
-    PARSED_DIRECTORY = "test-parsed"  # Directory to save parsed text files
-    EXTRACT_DIRECTORY = "test-extract"  # Directory to save extracted JSON files
+    PDF_DIRECTORY = "files/raw_inputs"  # Directory containing PDFs
+    PARSED_DIRECTORY = "files/parsed"  # Directory to save parsed text files
+    EXTRACT_DIRECTORY = "files/extracted"  # Directory to save extracted JSON files
+    MAX_PROCESSES = 36 #cpu_count()  # Maximum number of processes to use (defaults to CPU count)
     
     # Check if test directory exists
     if not os.path.exists(PDF_DIRECTORY):
@@ -44,6 +103,7 @@ def main():
     print(f"   📁 Extracted Data Directory: {EXTRACT_DIRECTORY}")
     print(f"   🔍 Extraction Method: OCR (Tesseract) - optimized for scanned documents")
     print(f"   📝 Filename Preservation: Original PDF names maintained")
+    print(f"   🚀 Multiprocessing: Enabled with up to {MAX_PROCESSES} parallel processes")
     
     # Test Azure OpenAI connection
     print(f"\n🔌 Testing Azure OpenAI Connection...")
@@ -57,13 +117,19 @@ def main():
     print(f"\n🚀 Starting PDF processing pipeline...")
     print("=" * 60)
     
-    # Step 1: Parse PDFs to text files using OCR
+    # Step 1: Parse PDFs to text files using OCR (with multiprocessing)
     print(f"\n📄 Step 1: Extracting text from scanned PDFs using OCR...")
     print("⏱️  Note: OCR processing may take several minutes for poor quality scans")
+    print(f"🚀 Using multiprocessing with {min(MAX_PROCESSES, len(pdf_files))} processes for parallel processing")
     print("-" * 50)
     
     try:
-        parsing_results = parse_multiple_pdfs(PDF_DIRECTORY, PARSED_DIRECTORY)
+        # Prepare arguments for multiprocessing
+        parse_args = [(pdf_file, PDF_DIRECTORY, PARSED_DIRECTORY) for pdf_file in pdf_files]
+        
+        # Use multiprocessing Pool for parallel PDF parsing
+        with Pool(processes=min(MAX_PROCESSES, len(pdf_files))) as pool:
+            parsing_results = list(tqdm(pool.imap(parse_single_pdf_wrapper, parse_args), total=len(parse_args), desc="PDF Parsing"))
         
         successful_parses = 0
         failed_parses = 0
@@ -79,6 +145,7 @@ def main():
         print(f"\n📊 OCR Parsing Summary:")
         print(f"   ✅ Successfully parsed: {successful_parses}")
         print(f"   ❌ Failed to parse: {failed_parses}")
+        print(f"   🚀 Processed with {min(MAX_PROCESSES, len(pdf_files))} parallel processes")
         
         if successful_parses == 0:
             print("❌ No PDFs were successfully parsed. Cannot proceed with data extraction.")
@@ -89,13 +156,32 @@ def main():
         print(f"❌ Error during PDF parsing: {e}")
         return
     
-    # Step 2: Extract contact information data using Azure OpenAI
+    # Step 2: Extract contact information data using Azure OpenAI (with multiprocessing)
     print(f"\n🤖 Step 2: Extracting contact information data using Azure OpenAI...")
     print("-" * 50)
     
     try:
-        extractor = OpenAIDataExtractor()
-        extraction_results = extractor.process_all_parsed_texts(PARSED_DIRECTORY, EXTRACT_DIRECTORY)
+        # Find all text files (excluding info files)
+        text_files = [
+            f for f in os.listdir(PARSED_DIRECTORY) 
+            if f.endswith('.txt') and not f.endswith('_info.txt')
+        ]
+        
+        if not text_files:
+            print(f"❌ No text files found in {PARSED_DIRECTORY}")
+            return
+        
+        print(f"🚀 Using multiprocessing with {min(MAX_PROCESSES, len(text_files))} processes for parallel data extraction")
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(EXTRACT_DIRECTORY, exist_ok=True)
+        
+        # Prepare arguments for multiprocessing
+        extract_args = [(text_file, PARSED_DIRECTORY, EXTRACT_DIRECTORY) for text_file in text_files]
+        
+        # Use multiprocessing Pool for parallel data extraction
+        with Pool(processes=min(MAX_PROCESSES, len(text_files))) as pool:
+            extraction_results = pool.map(extract_single_text_wrapper, extract_args)
         
         successful_extractions = 0
         failed_extractions = 0
@@ -112,6 +198,7 @@ def main():
         print(f"📊 Extraction Summary:")
         print(f"   ✅ Successfully extracted: {successful_extractions}")
         print(f"   ❌ Failed to extract: {failed_extractions}")
+        print(f"   🚀 Processed with {min(MAX_PROCESSES, len(text_files))} parallel processes")
         
         # Save consolidated results with enhanced metadata
         consolidated_file = os.path.join(EXTRACT_DIRECTORY, "contact_information_extraction_results.json")
