@@ -3,81 +3,47 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
+SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
+CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
+blob_handler = AzureBlobHandler(ACCOUNT_URL, SAS_TOKEN, CONTAINER_NAME)
+print("✓ Successfully connected to Azure Blob Storage")
+
 
 def list_blobs_example():
-    # Configuration - using environment variables
-    ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
-    SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
-    CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
-    
     try:
-        # Initialize the blob handler
-        print("Initializing Azure Blob Handler...")
-        blob_handler = AzureBlobHandler(ACCOUNT_URL, SAS_TOKEN, CONTAINER_NAME)
-        print("✓ Successfully connected to Azure Blob Storage")
-        
-        # Test 1: List all blobs in the container
-        print("\n1. Listing all blobs:")
+        print("\nListing all blobs:")
         blobs = blob_handler.list_blobs()
         if blobs:
             for blob in blobs:
                 print(f"   - {blob}")
         else:
             print("   No blobs found in container")
-            
     except Exception as e:
         print(f"✗ Error: {e}")
 
 
-def upload_directory_example():
-    # Configuration - using environment variables
-    ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
-    SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
-    CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
-    
+def upload_directory_example(upload_dir = "files/raw_inputs/"):
     try:
-        # Initialize the blob handler
-        print("Initializing Azure Blob Handler...")
-        blob_handler = AzureBlobHandler(ACCOUNT_URL, SAS_TOKEN, CONTAINER_NAME)
-        print("✓ Successfully connected to Azure Blob Storage")
-        
-        # Test 2: Upload entire directory
-        print("\n2. Uploading directory:")
-        local_dir = "raw_inputs/"  # Replace with your actual directory path
+        print("\nUploading directory:")
+        local_dir = upload_dir
         if os.path.exists(local_dir):
             uploaded_count = blob_handler.upload_directory(local_dir, "test_upload/")
             print(f"   ✓ Uploaded {uploaded_count} files")
         else:
             print(f"   Directory not found: {local_dir}")
-            print("   Please update the 'local_dir' variable with a valid directory path")
             
     except Exception as e:
         print(f"✗ Error: {e}")
 
 
 def download_blob_example(download_dir = "files/raw_inputs/"):
-    # Configuration - using environment variables
-    ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
-    SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
-    CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
-    
     try:
-        # Initialize the blob handler
-        print("Initializing Azure Blob Handler...")
-        blob_handler = AzureBlobHandler(ACCOUNT_URL, SAS_TOKEN, CONTAINER_NAME)
-        print("✓ Successfully connected to Azure Blob Storage")
         
-        # Test 3: Download all blobs to a user-specified directory
-        print("\n3. Downloading all blobs:")
-        
-        # Get user-specified download directory
-        # download_dir = "files/raw_inputs/"
-        
-        # Create the directory if it doesn't exist
+        print("\nDownloading all blobs:")
         os.makedirs(download_dir, exist_ok=True)
         print(f"   Download directory: {download_dir}")
         
-        # List all blobs first
         blobs = blob_handler.list_blobs()
         if not blobs:
             print("   No blobs found in container")
@@ -87,7 +53,6 @@ def download_blob_example(download_dir = "files/raw_inputs/"):
         for blob in blobs:
             print(f"     - {blob}")
         
-        # Download all blobs
         print(f"\n   Starting download of {len(blobs)} blobs...")
         downloaded_count = 0
         failed_count = 0
@@ -118,6 +83,6 @@ def download_blob_example(download_dir = "files/raw_inputs/"):
 
 
 if __name__ == "__main__":
-    # list_blobs_example()
-    # upload_directory_example()
-    download_blob_example()
+    list_blobs_example()
+    # upload_directory_example(upload_dir = "files/")
+    # download_blob_example(download_dir = "files/")

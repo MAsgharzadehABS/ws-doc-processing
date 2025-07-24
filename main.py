@@ -76,9 +76,10 @@ def main():
     print("=" * 60)
     
     # Configuration
-    PDF_DIRECTORY = "files/raw_inputs"  # Directory containing PDFs
-    PARSED_DIRECTORY = "files/parsed"  # Directory to save parsed text files
-    EXTRACT_DIRECTORY = "files/extracted"  # Directory to save extracted JSON files
+    ROOT_DIRECTORY = "files"
+    PDF_DIRECTORY = f"{ROOT_DIRECTORY}/raw_inputs"  # Directory containing PDFs
+    PARSED_DIRECTORY = f"{ROOT_DIRECTORY}/parsed"  # Directory to save parsed text files
+    EXTRACT_DIRECTORY = f"{ROOT_DIRECTORY}/extracted"  # Directory to save extracted JSON files
     MAX_PROCESSES = 36 #cpu_count()  # Maximum number of processes to use (defaults to CPU count)
     
     # Check if test directory exists
@@ -201,7 +202,7 @@ def main():
         print(f"   🚀 Processed with {min(MAX_PROCESSES, len(text_files))} parallel processes")
         
         # Save consolidated results with enhanced metadata
-        consolidated_file = os.path.join(EXTRACT_DIRECTORY, "contact_information_extraction_results.json")
+        consolidated_file = os.path.join(ROOT_DIRECTORY, "contact_information_extraction_results.json")
         
         # Enhance consolidated results with metadata summary
         enhanced_consolidated_results = {

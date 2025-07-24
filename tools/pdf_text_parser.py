@@ -32,9 +32,7 @@ class PDFTextParser:
             logger.error(f"Poppler not found at {POPPLER_PATH}")
             logger.error("Please ensure Poppler is installed in the poppler/ directory")
             raise RuntimeError("Poppler binaries are required for PDF processing")
-        else:
-            logger.info(f"Found Poppler at: {POPPLER_PATH}")
-        
+            
         # Ensure tesseract is available
         try:
             pytesseract.get_tesseract_version()
