@@ -2,7 +2,8 @@ from tools.blob_handler import AzureBlobHandler
 import os 
 from dotenv import load_dotenv
 load_dotenv()
-
+from datetime import datetime
+today = datetime.now().strftime("%Y%m%d")
 ACCOUNT_URL = "https://stdatapprdev002.blob.core.windows.net/"
 SAS_TOKEN = os.getenv("SAS_TOKEN") or ""
 CONTAINER_NAME = os.getenv("CONTAINER_NAME") or ""
@@ -10,7 +11,7 @@ blob_handler = AzureBlobHandler(ACCOUNT_URL, SAS_TOKEN, CONTAINER_NAME)
 print("✓ Successfully connected to Azure Blob Storage")
 
 
-def list_blobs_example():
+def list_blobs_example() -> None:
     try:
         print("\nListing all blobs:")
         blobs = blob_handler.list_blobs()
@@ -23,12 +24,12 @@ def list_blobs_example():
         print(f"✗ Error: {e}")
 
 
-def upload_directory_example(upload_dir = "files/raw_inputs/"):
+def upload_directory_example(upload_dir: str) -> None:
     try:
         print("\nUploading directory:")
         local_dir = upload_dir
         if os.path.exists(local_dir):
-            uploaded_count = blob_handler.upload_directory(local_dir, "test_upload/")
+            uploaded_count = blob_handler.upload_directory(local_dir, f"outputs/{today}/")
             print(f"   ✓ Uploaded {uploaded_count} files")
         else:
             print(f"   Directory not found: {local_dir}")
@@ -37,7 +38,7 @@ def upload_directory_example(upload_dir = "files/raw_inputs/"):
         print(f"✗ Error: {e}")
 
 
-def download_blob_example(download_dir = "files/raw_inputs/"):
+def download_blob_example(download_dir: str) -> None:
     try:
         
         print("\nDownloading all blobs:")
@@ -83,6 +84,6 @@ def download_blob_example(download_dir = "files/raw_inputs/"):
 
 
 if __name__ == "__main__":
-    list_blobs_example()
-    # upload_directory_example(upload_dir = "files/")
+    # list_blobs_example()
+    upload_directory_example(upload_dir = "files/")
     # download_blob_example(download_dir = "files/")
