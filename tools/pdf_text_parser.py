@@ -179,14 +179,19 @@ class PDFTextParser:
                         if total_pages == 1:
                             # Single page PDF - save without page number
                             processed_image_path = os.path.join(output_dir, f"{filename_base}_processed.png")
+                            original_image_path = os.path.join(output_dir, f"{filename_base}_original.png")
                         else:
                             # Multi-page PDF - include page number
                             processed_image_path = os.path.join(output_dir, f"{filename_base}_processed_page_{i+1}.png")
+                            original_image_path = os.path.join(output_dir, f"{filename_base}_original_page_{i+1}.png")
                         
+                        # Save both original and processed images for comparison
+                        image.save(original_image_path, "PNG")
                         processed_image.save(processed_image_path, "PNG")
+                        logger.info(f"Saved original image to: {original_image_path}")
                         logger.info(f"Saved processed image to: {processed_image_path}")
                     except Exception as e:
-                        logger.warning(f"Failed to save processed image for page {i+1}: {e}")
+                        logger.warning(f"Failed to save processed images for page {i+1}: {e}")
 
                 # Extract text using OCR configuration
                 page_text = self.extract_text_with_ocr_config(processed_image)
@@ -236,7 +241,7 @@ class PDFTextParser:
         logger.info(f"Processing file: {original_filename}")
         logger.info(f"Base name for output: {filename_base}")
         
-        # Extract text using enhanced OCR
+        # Extract text using enhanced OCR and save processed images
         extracted_text = self.extract_text_ocr(pdf_path, output_dir, filename_base)
         
         if not extracted_text or len(extracted_text.strip()) < 10:
@@ -253,8 +258,31 @@ class PDFTextParser:
         file_stats = os.stat(pdf_path)
         processing_timestamp = datetime.datetime.now().isoformat()
         
+        # Generate image file paths for documentation
+        image_files = []
+        try:
+            # Convert PDF to get page count for image file listing
+            from pdf2image import convert_from_path
+            images = convert_from_path(pdf_path, dpi=150, poppler_path=POPPLER_PATH)  # Lower DPI for counting only
+            total_pages = len(images)
+            
+            if total_pages == 1:
+                image_files.extend([
+                    f"{filename_base}_original.png",
+                    f"{filename_base}_processed.png"
+                ])
+            else:
+                for i in range(1, total_pages + 1):
+                    image_files.extend([
+                        f"{filename_base}_original_page_{i}.png",
+                        f"{filename_base}_processed_page_{i}.png"
+                    ])
+        except Exception as e:
+            logger.warning(f"Could not determine image file names: {e}")
+        
         # Create comprehensive metadata header
         metadata_header = f"""=== DOCUMENT METADATA ===
+
         Original Filename: {original_filename}
         Original File Path: {pdf_path}
         File Size: {file_stats.st_size} bytes
@@ -308,6 +336,9 @@ class PDFTextParser:
                 f.write(f"Features: Gaussian blur, adaptive thresholding, morphological operations, sharpening, contrast enhancement\n")
                 f.write(f"Parser version: PDFTextParser v2.0 (Enhanced)\n")
                 f.write(f"Output file: {text_file_path}\n")
+                f.write(f"Processed images: Both original and processed images saved for each page\n")
+                if image_files:
+                    f.write(f"Image files saved: {', '.join(image_files)}\n")
             logger.info(f"Saved processing info to: {info_file_path}")
         except Exception as e:
             logger.warning(f"Failed to save info file: {e}")
@@ -318,6 +349,7 @@ class PDFTextParser:
             "filename_base": filename_base,
             "text_file": text_file_path,
             "info_file": info_file_path,
+            "image_files": image_files,
             "extraction_method": "Enhanced OCR",
             "text_length": len(extracted_text),
             "file_size": file_stats.st_size,
@@ -328,6 +360,9 @@ class PDFTextParser:
         logger.info(f"Successfully processed {original_filename}")
         logger.info(f"Text file: {text_file_path}")
         logger.info(f"Text length: {len(extracted_text)} characters")
+        if image_files:
+            logger.info(f"Processed images saved: {len(image_files)} files (original + processed for each page)")
+            logger.info(f"Image files: {', '.join(image_files[:4])}{'...' if len(image_files) > 4 else ''}")
         
         return result
 
@@ -392,5 +427,6 @@ def parse_multiple_pdfs(pdf_directory: str, output_dir: str = "test-parsed") -> 
     logger.info(f"Successfully processed: {successful}")
     logger.info(f"Failed: {failed}")
     logger.info(f"Enhancement features: Advanced image preprocessing, multiple OCR configurations, confidence-based selection")
+    logger.info(f"Output: Text files, processing info, and processed images (original + processed) saved to {output_dir}")
     
     return results
