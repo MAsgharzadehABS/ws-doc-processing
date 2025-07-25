@@ -17,8 +17,8 @@ A comprehensive system for processing PDF documents using OCR and Azure OpenAI f
 
 The system works in two main steps with **enhanced metadata tracking**:
 
-1. **📄 PDF OCR Extraction**: Extract text from scanned PDFs using Tesseract OCR and save to `test-parsed/` folder **with comprehensive metadata headers**
-2. **🤖 Data Extraction**: Use Azure OpenAI to extract structured contact information data **with preserved source metadata**
+1. **📄 PDF OCR Extraction**: Extract text from scanned PDFs using Tesseract OCR and save to `files/parsed/` folder **with comprehensive metadata headers**
+2. **🤖 Data Extraction**: Use Azure OpenAI to extract structured contact information data **with preserved source metadata** and save to `files/extracted/` folder
 
 ## 🛠️ Installation
 
@@ -100,39 +100,18 @@ OPENAI_KEY=your_azure_openai_api_key_here
 
 ### Process Multiple PDFs
 
-Place your PDF files in the `test/` directory and run:
+Place your PDF files in the `files/` directory and run:
 
 ```bash
 python main.py
 ```
 
 This will:
-1. ✅ Extract text from all PDFs in the `test/` directory using OCR **with metadata headers**
-2. 📁 Save extracted text to `test-parsed/` folder (preserving original filenames)
-3. 🤖 Extract contact information data using Azure OpenAI **with preserved metadata**
+1. ✅ Extract text from all PDFs in the `files/` directory using OCR **with metadata headers**
+2. 📁 Save extracted text to `files/parsed/` folder (preserving original filenames)
+3. 🤖 Extract contact information data using Azure OpenAI **with preserved metadata** to `files/extracted/` folder
 4. 💾 Save results as enhanced JSON files with comprehensive metadata
 
-### Process Single PDF
-
-```python
-from main import process_single_pdf
-process_single_pdf("path/to/your/document.pdf")
-```
-
-### Manual Steps
-
-You can also run the components separately:
-
-```python
-# Step 1: Extract text from PDFs using OCR with metadata
-from tools.pdf_text_parser import parse_multiple_pdfs
-results = parse_multiple_pdfs("test", "test-parsed")
-
-# Step 2: Extract contact information data with metadata preservation
-from tools.pdf_field_extractor import OpenAIDataExtractor
-extractor = OpenAIDataExtractor()
-extraction_results = extractor.process_all_parsed_texts("test-parsed", "test-extract")
-```
 
 ## 📋 Extracted Data Fields
 
@@ -160,17 +139,17 @@ The system extracts the following contact information and delivery fields:
 
 The system generates several types of output files, **all with comprehensive metadata preservation**:
 
-### Text Extraction Output (`test-parsed/`)
+### Text Extraction Output (`files/parsed/`)
 - `{original_pdf_name}.txt`: **Enhanced format** with metadata header + extracted text
 - `{original_pdf_name}_info.txt`: Detailed metadata about extraction process
 
-### Contact Information Data Output (`test-extract/`)
+### Contact Information Data Output (`files/extract/`)
 - `{original_pdf_name}_contact_information_data.json`: **Enhanced JSON** with metadata + structured data
 - `contact_information_extraction_results.json`: **Enhanced consolidated results** with processing summary
 
 ### 🆕 Enhanced File Format Examples:
 
-#### Enhanced Text File Format (`test-parsed/document.txt`):
+#### Enhanced Text File Format (`files/parsed/document.txt`):
 ```
 === DOCUMENT METADATA ===
 Original Filename: important_document.pdf
@@ -189,7 +168,7 @@ Parser Version: PDFTextParser v1.0
 === END DOCUMENT ===
 ```
 
-#### Enhanced JSON File Format (`test-extract/document_contact_information_data.json`):
+#### Enhanced JSON File Format (`files/extract/document_contact_information_data.json`):
 ```json
 {
   "document_metadata": {
@@ -203,7 +182,7 @@ Parser Version: PDFTextParser v1.0
     "text_length": "2500 characters",
     "processed_by": "OpenAIDataExtractor",
     "extraction_processing_timestamp": "2024-01-15T11:05:00.123456",
-    "source_text_file": "/path/to/test-parsed/document.txt",
+    "source_text_file": "/path/to/files/parsed/document.txt",
     "filename_base": "document"
   },
   "extracted_fields": {
@@ -213,27 +192,6 @@ Parser Version: PDFTextParser v1.0
     // ... other extracted fields
   }
 }
-```
-
-### Example File Structure:
-```
-ws-doc-processing/
-├── test/
-│   ├── important_document.pdf
-│   └── another_file.pdf
-├── test-parsed/                         # Enhanced text files with metadata
-│   ├── important_document.txt           # Metadata header + extracted text
-│   ├── important_document_info.txt      # Processing details
-│   ├── another_file.txt
-│   └── another_file_info.txt
-├── test-extract/                        # Enhanced JSON files with metadata
-│   ├── important_document_contact_information_data.json  # Metadata + extracted data
-│   ├── another_file_contact_information_data.json
-│   └── contact_information_extraction_results.json      # Enhanced consolidated results
-└── poppler/                             # Poppler binaries
-    └── poppler-24.08.0/
-        └── Library/
-            └── bin/
 ```
 
 ## 📦 Dependencies
@@ -269,8 +227,8 @@ ws-doc-processing/
 
 5. **Metadata not showing**: 
    - Ensure you're using the updated version of the code
-   - Check that text files in `test-parsed/` contain metadata headers
-   - Verify JSON files in `test-extract/` have `document_metadata` section
+   - Check that text files in `files/parsed/` contain metadata headers
+   - Verify JSON files in `files/extracted/` have `document_metadata` section
 
 ### Test Components
 
@@ -283,12 +241,6 @@ dir poppler\poppler-*\Library\bin\pdftoppm.exe
 #### Test Tesseract OCR Installation:
 ```bash
 tesseract --version
-```
-
-#### Test Azure OpenAI Connection:
-```python
-from tools.pdf_field_extractor import test_azure_openai_connection
-test_azure_openai_connection()
 ```
 
 ## 🔧 OCR Optimization for Poor Quality Documents
@@ -326,9 +278,10 @@ ws-doc-processing/
 ├── main.py                              # Main processing pipeline with metadata
 ├── requirements.txt                     # Python dependencies
 ├── .env                                 # Configuration (create this)
-├── test/                               # Input PDF files
-├── test-parsed/                        # Enhanced parsed text with metadata headers
-├── test-extract/                       # Enhanced JSON files with metadata + extracted data
+├── files/                              # Document processing directories
+│   ├── raw_inputs/                     # Original PDF files for processing
+│   ├── parsed/                         # Parsed text files with OCR results
+│   └── extracted/                      # Extracted JSON data with metadata
 ├── poppler/                            # Poppler binaries (download and extract here)
 │   └── poppler-24.08.0/
 │       └── Library/
