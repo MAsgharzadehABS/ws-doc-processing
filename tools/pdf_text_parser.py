@@ -114,67 +114,29 @@ class PDFTextParser:
             logger.warning(f"Image preprocessing failed, using original image: {e}")
             return image
     
-    def extract_text_with_multiple_configs(self, processed_image):
+    def extract_text_with_ocr_config(self, processed_image):
         """
-        Try multiple OCR configurations and return the best result based on confidence.
+        Extract text using a single OCR configuration.
         
         Args:
             processed_image: PIL Image object (preprocessed)
             
         Returns:
-            str: Best OCR result
+            str: OCR result
         """
-        # Multiple OCR configurations to try
-        configs = [
-            r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:-_/()[]@%+&',
-            r'--oem 3 --psm 7 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:-_/()[]@%+&',
-            r'--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:-_/()[]@%+&',
-            r'--oem 3 --psm 13 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:-_/()[]@%+&',
-        ]
+        # Use single OCR configuration
+        custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:-_/()[]@%+&'
         
-        best_text = ""
-        best_confidence = 0
-        
-        for i, config in enumerate(configs):
-            try:
-                # Get OCR result with confidence scores
-                data = pytesseract.image_to_data(
-                    processed_image, 
-                    config=config,
-                    lang='eng',
-                    output_type=pytesseract.Output.DICT
-                )
-                
-                # Calculate average confidence
-                confidences = [int(conf) for conf in data['conf'] if int(conf) > 0]
-                if confidences:
-                    avg_confidence = sum(confidences) / len(confidences)
-                    
-                    if avg_confidence > best_confidence:
-                        best_confidence = avg_confidence
-                        best_text = pytesseract.image_to_string(
-                            processed_image, 
-                            config=config,
-                            lang='eng'
-                        )
-                        logger.debug(f"Config {i+1} achieved confidence: {avg_confidence:.2f}")
-            except Exception as e:
-                logger.debug(f"Config {i+1} failed: {e}")
-                continue
-        
-        # Fallback to original configuration if none worked well
-        if not best_text.strip():
-            logger.warning("All advanced configs failed, falling back to default")
-            custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:-_/()[]@%+&'
-            best_text = pytesseract.image_to_string(
+        try:
+            text = pytesseract.image_to_string(
                 processed_image, 
                 config=custom_config,
                 lang='eng'
             )
-        else:
-            logger.debug(f"Best OCR result with confidence: {best_confidence:.2f}")
-        
-        return best_text
+            return text
+        except Exception as e:
+            logger.error(f"OCR extraction failed: {e}")
+            return ""
     
     def extract_text_ocr(self, pdf_path: str, output_dir: Optional[str] = None, filename_base: Optional[str] = None) -> str:
         """
@@ -226,8 +188,8 @@ class PDFTextParser:
                     except Exception as e:
                         logger.warning(f"Failed to save processed image for page {i+1}: {e}")
 
-                # Extract text using multiple configurations
-                page_text = self.extract_text_with_multiple_configs(processed_image)
+                # Extract text using OCR configuration
+                page_text = self.extract_text_with_ocr_config(processed_image)
                 
                 # Post-processing to clean up common OCR errors
                 if page_text.strip():
@@ -293,20 +255,22 @@ class PDFTextParser:
         
         # Create comprehensive metadata header
         metadata_header = f"""=== DOCUMENT METADATA ===
-Original Filename: {original_filename}
-Original File Path: {pdf_path}
-File Size: {file_stats.st_size} bytes
-File Modified: {datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()}
-Processing Timestamp: {processing_timestamp}
-Extraction Method: Enhanced OCR (Tesseract with Advanced Preprocessing)
-OCR Configuration: Multiple PSM modes with confidence-based selection
-Image Preprocessing: Gaussian blur, adaptive thresholding, morphological operations, sharpening, contrast/brightness enhancement
-Text Length: {len(extracted_text)} characters
-Parser Version: PDFTextParser v2.0 (Enhanced)
-=== END METADATA ===
+        Original Filename: {original_filename}
+        Original File Path: {pdf_path}
+        File Size: {file_stats.st_size} bytes
+        File Modified: {datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()}
+        Processing Timestamp: {processing_timestamp}
+        Extraction Method: Enhanced OCR (Tesseract with Advanced Preprocessing)
+        OCR Configuration: Multiple PSM modes with confidence-based selection
+        Image Preprocessing: Gaussian blur, adaptive thresholding, morphological operations, sharpening, contrast/brightness enhancement
+        Output Directory: {output_dir}
+        Processed Images: Saved both original and processed images for each page
+        Text Length: {len(extracted_text)} characters
+        Parser Version: PDFTextParser v2.0 (Enhanced)
+        === END METADATA ===
 
-=== EXTRACTED TEXT CONTENT ===
-"""
+        === EXTRACTED TEXT CONTENT ===
+        """
         
         # Combine metadata header with extracted text
         final_content = metadata_header + extracted_text + "\n\n=== END DOCUMENT ==="
