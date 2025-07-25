@@ -8,6 +8,13 @@ from tools.pdf_text_parser import parse_multiple_pdfs, PDFTextParser
 from tools.pdf_field_extractor import OpenAIDataExtractor, test_azure_openai_connection
 from tqdm import tqdm
 
+# Configuration
+ROOT_DIRECTORY = "files"
+PDF_DIRECTORY = f"{ROOT_DIRECTORY}/raw_inputs"  # Directory containing PDFs
+PARSED_DIRECTORY = f"{ROOT_DIRECTORY}/parsed"  # Directory to save parsed text files
+EXTRACT_DIRECTORY = f"{ROOT_DIRECTORY}/extracted"  # Directory to save extracted JSON files
+MAX_PROCESSES = 36 #cpu_count()  # Maximum number of processes to use (defaults to CPU count)
+
 # Load environment variables
 load_dotenv()
 
@@ -75,12 +82,6 @@ def main():
     print("📄 Optimized for scanned documents with poor quality")
     print("=" * 60)
     
-    # Configuration
-    ROOT_DIRECTORY = "files"
-    PDF_DIRECTORY = f"{ROOT_DIRECTORY}/raw_inputs"  # Directory containing PDFs
-    PARSED_DIRECTORY = f"{ROOT_DIRECTORY}/parsed"  # Directory to save parsed text files
-    EXTRACT_DIRECTORY = f"{ROOT_DIRECTORY}/extracted"  # Directory to save extracted JSON files
-    MAX_PROCESSES = 36 #cpu_count()  # Maximum number of processes to use (defaults to CPU count)
     
     # Check if test directory exists
     if not os.path.exists(PDF_DIRECTORY):

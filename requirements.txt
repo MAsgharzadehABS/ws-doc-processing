@@ -9,3 +9,4 @@ pdf2image
 pdfplumber
 spacy
 opencv-python
+reportlab
