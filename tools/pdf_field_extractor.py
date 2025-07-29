@@ -45,33 +45,33 @@ class OpenAIDataExtractor:
         Generate the specialized prompt for marine fuel delivery data extraction.
         """
         prompt = f"""You are an AI agent specialized in extracting structured data from OCRed PDF documents related to marine fuel deliveries. Your task is to carefully analyze the provided document text and extract the following specific fields.
-
+ 
             ## Required Fields to Extract:
-
+ 
             Extract the following information and return it in JSON format. If any field cannot be found or determined from the document, return "NA" for that field:
-
-            - **RECEIVING_VESSEL_NAME**: Name of the vessel receiving the fuel
-            - **DELIVERING_VESSEL_NAME**: Name of the vessel or barge delivering the fuel  
-            - **IMO_NUMBER**: International Maritime Organization number of the receiving vessel
-            - **PORT**: Port where the delivery took place
-            - **DELIVERY_DATE**: Date of fuel delivery (format as found in document)
-            - **SUPPLIER_NAME**: Name of the fuel supplier company
-            - **SUPPLIER_ADDRESS**: Full address of the supplier
-            - **SUPPLIER_PHONE**: Phone number of the supplier
-            - **DELIVERY_METHOD**: Method of delivery (e.g., barge, truck, pipeline)
-            - **DELIVERY_LOCATION**: Specific location where delivery occurred (berth, anchorage, etc.)
-            - **PRODUCT_NAME**: Type of fuel product delivered
-            - **QUANTITY_METRIC_TONS**: Quantity delivered in metric tons
-            - **DENSITY_15C**: Density at 15°C (include units if specified)
-            - **SULPHUR_CONTENT**: Sulphur content percentage or specification
-            - **FLASH_POINT**: Flash point temperature (include units)
-            - **TIME_OF_COMMENCEMENT**: Start time of delivery operation
-            - **TIME_COMPLETED**: End time of delivery operation
-
+ 
+            - **RECEIVING_VESSEL_NAME**: Name of the vessel receiving the fuel (e.g., "Kan Wo", "MV Ocean Explorer")
+            - **DELIVERING_VESSEL_NAME**: Name of the vessel or barge delivering the fuel (e.g., "Teluge", "MV Fuel Carrier")  
+            - **IMO_NUMBER**: International Maritime Organization number of the receiving vessel (e.g., "9811074")
+            - **PORT**: Port where the delivery took place (e.g., "SINGAPORE", "Vancouver")
+            - **DELIVERY_DATE**: Date of fuel delivery (format as found in document, e.g., "1/5/2024")
+            - **SUPPLIER_NAME**: Name of the fuel supplier company (e.g., "Hyundai Oilbank Co. Ltd")
+            - **SUPPLIER_ADDRESS**: Full address of the supplier (e.g., "Building 123 Industrial District Seoul Korea")
+            - **SUPPLIER_PHONE**: Phone number of the supplier (e.g., "402-500-4500")
+            - **DELIVERY_METHOD**: Method of delivery (e.g., "lighter", "Barge", "Tanker")
+            - **DELIVERY_LOCATION**: Specific location where delivery occurred (e.g., "SINGAPORE ANCHORAGE", "Vancouver Harbor")
+            - **PRODUCT_NAME**: Type of fuel product delivered (e.g., "VLSFO", "LSMGO")
+            - **QUANTITY_METRIC_TONS**: Quantity delivered in metric tons (e.g., "86", "150")
+            - **DENSITY_15C**: Density at 15°C (include units if specified, e.g., "985.2")
+            - **SULPHUR_CONTENT**: Sulphur content percentage or specification (e.g., "0.35")
+            - **FLASH_POINT**: Flash point temperature (include units, e.g., "65°C")
+            - **TIME_OF_COMMENCEMENT**: Start time of delivery operation (e.g., "08:00" or "08:00:00")
+            - **TIME_COMPLETED**: End time of delivery operation (e.g., "10:00" or "10:00:00")
+ 
             ## Product Reference Guide:
             The PRODUCT_NAME should match one of these common marine fuels if identified:
             - HFO (Heavy Fuel Oil)
-            - LSFO (Low Sulphur Fuel Oil) 
+            - LSFO (Low Sulphur Fuel Oil)
             - VLSFO (Very Low Sulphur Fuel Oil)
             - MDO (Marine Diesel Oil)
             - MGO (Marine Gas Oil)
@@ -80,7 +80,7 @@ class OpenAIDataExtractor:
             - LNG (Liquefied Natural Gas)
             - LPG (Liquefied Petroleum Gas)
             - Methanol
-
+ 
             ## Instructions:
             1. Carefully read through the entire OCRed document text
             2. Look for variations in terminology (e.g., "vessel name" vs "ship name", "mt" vs "metric tons")
@@ -88,11 +88,11 @@ class OpenAIDataExtractor:
             4. Cross-reference information if the same data appears in multiple locations
             5. For dates and times, preserve the original format found in the document
             6. Return "NA" for any field that cannot be definitively determined
-            7. Format your response as clean, valid JSON
-
+            7. Format your response as clean, valid JSON      
+ 
             ## Output Format:
             Return your findings in the following JSON structure:
-
+ 
             ```json
             {{
             "RECEIVING_VESSEL_NAME": "",
@@ -114,13 +114,13 @@ class OpenAIDataExtractor:
             "TIME_COMPLETED": ""
             }}
             ```
-
+ 
             ## Document Text to Analyze:
-
+ 
             {document_text}
-
+ 
             Now please analyze the provided OCRed document text and extract the requested information."""
-        
+       
         return prompt
     
     def extract_marine_fuel_data(self, document_text: str) -> Dict:
